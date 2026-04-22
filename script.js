@@ -9,7 +9,7 @@ let useCustomApi = false;
 let customApiKey = '';
 
 // GANTI INI DENGAN API KEY GEMINI KAMU!
-const PUBLIC_API_KEY = 'AIzaSyB6sZ1jzvyVaDourFZwNXQsILeitQSkHwc'; 
+const PUBLIC_API_KEY = 'AIzaSyBpjMa2mEIV-L9hPpNdeMGr4GrMFlG97DE'; 
 
 async function generateReply() {
     const tweetUrl = tweetUrlInput.value.trim();
