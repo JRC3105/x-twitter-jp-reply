@@ -1,4 +1,6 @@
-// HANYA ganti fungsi callGemini:
+// https://github.com/JRC3105/x-reply-gemini/blob/main/script.js
+// GANTI FUNGSI callGemini() INI SAJA:
+
 async callGemini(tweetContent) {
     this.showLoading();
     
@@ -9,11 +11,14 @@ async callGemini(tweetContent) {
             body: JSON.stringify({ tweetUrl: tweetContent })
         });
 
-        if (!response.ok) throw new Error('API Error');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'API Error');
+        }
         
         const data = await response.json();
         return data.reply;
     } catch (error) {
-        throw new Error('Gagal generate reply. Cek koneksi.');
+        throw new Error('Gagal generate reply: ' + error.message);
     }
 }
