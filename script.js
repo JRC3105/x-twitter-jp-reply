@@ -1,9 +1,5 @@
-// https://github.com/JRC3105/x-reply-gemini/blob/main/script.js
-// GANTI FUNGSI callGemini() INI SAJA:
-
+// 📋 REPLACE SELURUH callGemini function:
 async callGemini(tweetContent) {
-    this.showLoading();
-    
     try {
         const response = await fetch('/api/generate', {
             method: 'POST',
@@ -12,13 +8,13 @@ async callGemini(tweetContent) {
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'API Error');
+            const error = await response.json();
+            throw new Error(error.error || 'API Error');
         }
         
         const data = await response.json();
         return data.reply;
     } catch (error) {
-        throw new Error('Gagal generate reply: ' + error.message);
+        throw new Error('Gagal: ' + error.message);
     }
 }
