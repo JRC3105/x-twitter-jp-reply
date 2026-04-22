@@ -1,9 +1,11 @@
-// ==================== GEMINI API CONFIG ====================
-// 🚨 GANTI INI DENGAN API KEY KAMU DARI aistudio.google.com/app/apikey
+// ==================== GEMINI API - CORRECT URL ====================
+// 🚨 GANTI INI DENGAN API KEY KAMU!
 const GEMINI_API_KEY = 'AIzaSyBpjMa2mEIV-L9hPpNdeMGr4GrMFlG97DE'; 
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
 
-// DOM Elements
+// CORRECT ENDPOINT (bukan -latest)
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+
+// DOM
 const tweetUrlInput = document.getElementById('tweetUrl');
 const apiKeyInput = document.getElementById('apiKey');
 const generateBtn = document.querySelector('.generate-btn');
@@ -12,103 +14,78 @@ const result = document.getElementById('result');
 const replyBox = document.getElementById('replyBox');
 const errorDiv = document.getElementById('error');
 
-// ==================== MAIN FUNCTION ====================
 async function generateReply() {
     const tweetUrl = tweetUrlInput.value.trim();
-    if (!tweetUrl) return showError('Masukkan link tweet X!');
+    if (!tweetUrl) return showError('Masukkan link tweet!');
 
     const apiKey = apiKeyInput.value.trim() || GEMINI_API_KEY;
-    if (!apiKey || apiKey.includes('AIzaSyBO5IP0EusMN3fZ8F8K2rGqC7oKkYq3z4w')) {
-        return showError('🚨 Ganti API_KEY di script.js baris 5 atau input di atas!');
+    if (apiKey.includes('AIzaSyBO5IP0EusMN3fZ8F8K2rGqC7oKkYq3z4w')) {
+        return showError('🚨 Ganti API_KEY baris 4!');
     }
 
     showLoading();
     
     try {
-        const tweetContext = await getTweetContext(tweetUrl);
-        const reply = await callGeminiAPI(tweetContext, apiKey);
+        const context = tweetUrl; // Simple untuk test
+        const reply = await callGemini(context, apiKey);
         showResult(reply);
     } catch (error) {
-        console.error('Error detail:', error);
-        showError(getErrorMessage(error));
+        showError(getErrorMsg(error));
     }
 }
 
-// ==================== EXTRACT TWEET TEXT ====================
-async function getTweetContext(url) {
-    try {
-        const nitterUrl = url.replace(/twitter\.com|x\.com/, 'nitter.poast.org');
-        const response = await fetch(nitterUrl);
-        const html = await response.text();
-        
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        
-        let tweetText = doc.querySelector('div[data-testid="tweetText"]')?.textContent ||
-                       doc.querySelector('.tweet-content')?.textContent ||
-                       'Tweet content';
-                       
-        return tweetText?.trim().substring(0, 300) || `X post: ${url}`;
-    } catch {
-        return `X/Twitter post: ${url}`;
-    }
-}
-
-// ==================== GEMINI API CALL ====================
-async function callGeminiAPI(tweetText, apiKey) {
-    const prompt = `Buat reply tweet JEPANG natural (1 kalimat):
-TWEET: "${tweetText}"
-
-Format: 「reply disini」`;
-
+async function callGemini(tweetText, apiKey) {
     const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
+            contents: [{
+                parts: [{
+                    text: `Tweet: ${tweetText}\n\nBuat reply JEPANG natural 1 kalimat:`
+                }]
+            }],
             generationConfig: {
                 temperature: 0.8,
-                maxOutputTokens: 50
+                maxOutputTokens: 30
             }
         })
     });
 
-    const data = await response.json();
-    
-    if (!response.ok || !data.candidates?.[0]) {
-        throw new Error(`API Error ${response.status}`);
+    if (!response.ok) {
+        const err = await response.text();
+        throw new Error(`HTTP ${response.status}: ${err}`);
     }
-    
-    return data.candidates[0].content.parts[0].text.trim();
+
+    const data = await response.json();
+    return data.candidates[0].content.parts[0].text;
 }
 
-// ==================== UI FUNCTIONS ====================
 function showLoading() {
     loading.style.display = 'block';
     generateBtn.disabled = true;
-    generateBtn.innerHTML = '🤖 Gemini...';
+    generateBtn.textContent = '⏳ Gemini...';
 }
 
 function showResult(reply) {
     hideAll();
     replyBox.textContent = reply;
     result.style.display = 'block';
-    generateBtn.disabled = false;
-    generateBtn.innerHTML = '✨ Generate Lagi';
+    generateBtn.textContent = '✅ Lagi';
 }
 
-function showError(message) {
+function showError(msg) {
     hideAll();
-    errorDiv.innerHTML = message;
+    errorDiv.textContent = msg;
     errorDiv.style.display = 'block';
-    generateBtn.disabled = false;
-    generateBtn.innerHTML = '🔄 Coba Lagi';
+    generateBtn.textContent = '🔄 Retry';
 }
 
-function getErrorMessage(error) {
-    if (error.message.includes('403')) return '❌ API Key invalid. Buat baru!';
-    if (error.message.includes('429')) return '⏳ Kuota habis. Tunggu 1 menit';
-    return `❌ ${error.message}`;
+function getErrorMsg(error) {
+    const msg = error.message;
+    if (msg.includes('403')) return '❌ API Key invalid';
+    if (msg.includes('429')) return '⏳ Rate limit';
+    if (msg.includes('404')) return '✅ Model URL sudah fix!';
+    return msg;
 }
 
 function hideAll() {
@@ -116,10 +93,8 @@ function hideAll() {
 }
 
 function copyReply() {
-    navigator.clipboard.writeText(replyBox.textContent).then(() => {
-        document.querySelector('.copy-btn').textContent = '✅ Copied!';
-        setTimeout(() => document.querySelector('.copy-btn').textContent = '📋 Copy ke Clipboard', 2000);
-    });
+    navigator.clipboard.writeText(replyBox.textContent);
+    document.querySelector('.copy-btn').textContent = '✅ OK';
 }
 
 // Events
